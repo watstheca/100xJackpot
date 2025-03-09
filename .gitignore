@@ -1,0 +1,13 @@
+node_modules
+.env
+artifacts
+cache
+.DS_Store
+coverage
+coverage.json
+build
+dist
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
