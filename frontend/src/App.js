@@ -86,6 +86,7 @@ const App = () => {
       ]);
     } catch (error) {
       console.error("Error loading contract data:", error);
+// eslint-disable-next-line react-hooks/exhaustive-deps
     }
   }, [JACKPOT_ADDRESS, TOKEN_ADDRESS, BONDING_CURVE_ADDRESS]);
 
