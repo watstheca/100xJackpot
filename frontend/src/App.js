@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Web3 from 'web3';
 import JackpotGameABI from './abi/JackpotGame.json';
 import Token100xABI from './abi/Token100x.json';
@@ -33,42 +33,7 @@ const App = () => {
   const TOKEN_ADDRESS = process.env.REACT_APP_TOKEN_ADDRESS || '0x0755fb9917419a08c90a0Fd245F119202844ec3D';
   const BONDING_CURVE_ADDRESS = process.env.REACT_APP_BONDING_CURVE_ADDRESS || '0x2ECA93adD34C533008b947B2Ed02e4974122D525';
 
-  useEffect(() => {
-    const initWeb3 = async () => {
-      if (window.ethereum) {
-        try {
-          // Request account access
-          await window.ethereum.request({ method: 'eth_requestAccounts' });
-          const web3Instance = new Web3(window.ethereum);
-          setWeb3(web3Instance);
-          
-          // Get user accounts
-          const accts = await web3Instance.eth.getAccounts();
-          setAccounts(accts);
-          
-          // Initialize contracts
-          const jackpotInstance = new web3Instance.eth.Contract(JackpotGameABI.abi, JACKPOT_ADDRESS);
-          const tokenInstance = new web3Instance.eth.Contract(Token100xABI.abi, TOKEN_ADDRESS);
-          const bondingCurveInstance = new web3Instance.eth.Contract(BondingCurveABI.abi, BONDING_CURVE_ADDRESS);
-          
-          setJackpotContract(jackpotInstance);
-          setTokenContract(tokenInstance);
-          setBondingCurveContract(bondingCurveInstance);
-          
-          // Load initial data
-          await loadContractData(web3Instance, jackpotInstance, tokenInstance, bondingCurveInstance, accts[0]);
-        } catch (error) {
-          console.error("User denied account access or error occurred:", error);
-        }
-      } else {
-        console.log('Please install MetaMask!');
-      }
-    };
-    
-    initWeb3();
-  }, []);
-
-  const loadContractData = async (web3, jackpot, token, bondingCurve, account) => {
+  const loadContractData = useCallback(async (web3, jackpot, token, bondingCurve, account) => {
     try {
       // Load jackpot data
       const jackpotValueWei = await web3.eth.getBalance(JACKPOT_ADDRESS);
@@ -122,7 +87,42 @@ const App = () => {
     } catch (error) {
       console.error("Error loading contract data:", error);
     }
-  };
+  }, [JACKPOT_ADDRESS, TOKEN_ADDRESS, BONDING_CURVE_ADDRESS]);
+
+  useEffect(() => {
+    const initWeb3 = async () => {
+      if (window.ethereum) {
+        try {
+          // Request account access
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const web3Instance = new Web3(window.ethereum);
+          setWeb3(web3Instance);
+          
+          // Get user accounts
+          const accts = await web3Instance.eth.getAccounts();
+          setAccounts(accts);
+          
+          // Initialize contracts
+          const jackpotInstance = new web3Instance.eth.Contract(JackpotGameABI.abi, JACKPOT_ADDRESS);
+          const tokenInstance = new web3Instance.eth.Contract(Token100xABI.abi, TOKEN_ADDRESS);
+          const bondingCurveInstance = new web3Instance.eth.Contract(BondingCurveABI.abi, BONDING_CURVE_ADDRESS);
+          
+          setJackpotContract(jackpotInstance);
+          setTokenContract(tokenInstance);
+          setBondingCurveContract(bondingCurveInstance);
+          
+          // Load initial data
+          await loadContractData(web3Instance, jackpotInstance, tokenInstance, bondingCurveInstance, accts[0]);
+        } catch (error) {
+          console.error("User denied account access or error occurred:", error);
+        }
+      } else {
+        console.log('Please install MetaMask!');
+      }
+    };
+    
+    initWeb3();
+  }, [JACKPOT_ADDRESS, TOKEN_ADDRESS, BONDING_CURVE_ADDRESS, loadContractData]);
 
   const makeGuess = async () => {
     if (!jackpotContract || !web3 || !accounts[0] || !currentGuess) return;
@@ -219,7 +219,7 @@ const App = () => {
     }
   };
 
-  const calculateGuessChance = async () => {
+  const calculateGuessChance = useCallback(async () => {
     if (!jackpotContract || !web3 || !accounts[0] || !currentGuess) return;
     
     try {
@@ -229,13 +229,13 @@ const App = () => {
       console.error("Error calculating guess chance:", error);
       setGuessChance('0%');
     }
-  };
+  }, [jackpotContract, web3, accounts, currentGuess]);
 
   useEffect(() => {
     if (currentGuess && jackpotContract && web3 && accounts[0]) {
       calculateGuessChance();
     }
-  }, [currentGuess]);
+  }, [currentGuess, jackpotContract, web3, accounts, calculateGuessChance]);
 
   return (
     <div className="app-container">
